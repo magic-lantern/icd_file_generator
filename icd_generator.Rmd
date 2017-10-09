@@ -42,10 +42,10 @@ library(stringi)
 
 files <- tibble(
   file_desc = c("icd9_dx", "icd9_pc", "icd10_dx", "icd10_pc"),
-  file_name = c("data_files/CMS32_DESC_LONG_DX.txt",
-                "data_files/CMS32_DESC_LONG_SG.txt",
-                "data_files/icd10cm_codes_2017.txt",
-                "data_files/icd10pcs_codes_2017.txt")
+  file_name = c("data/CMS32_DESC_LONG_DX.txt",
+                "data/CMS32_DESC_LONG_SG.txt",
+                "data/icd10cm_codes_2017.txt",
+                "data/icd10pcs_codes_2017.txt")
   )
 
 col_names <- c("code", "description")
