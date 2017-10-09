@@ -1,0 +1,222 @@
+---
+title: "ICD Sample File Generator"
+author: "Seth Russell"
+date: "10/5/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This script is used to create a sample data set of N rows with X columns of data. User can specify D columns of ICD diagnosis codes, P columns of ICD procedure codes, and G columns of extra data.
+
+Either ICD9 or ICD10 codes can be generated.
+
+### ICD 9
+ICD 9 code list was obtained from CMS on October 2017 via: https://www.cms.gov/Medicare/Coding/ICD9ProviderDiagnosticCodes/codes.html - specific file downloaded was [Version 32 Full and Abbreviated Code Titles – Effective October 1, 2014 [ZIP, 1MB]](https://www.cms.gov/Medicare/Coding/ICD9ProviderDiagnosticCodes/Downloads/ICD-9-CM-v32-master-descriptions.zip) 
+
+ICD 9 Files included in with this code are:
+
+* CMS32_DESC_LONG_DX.txt - List of ICD9 diagnosis codes along with a long description
+* CMS32_DESC_LONG_SG.txt - List of ICD9 procedure codes along with a long description
+
+### ICD 10
+
+ICD 10 code list was obtained from CMS on October 2017 via: https://www.cms.gov/Medicare/Coding/ICD10/2017-ICD-10-CM-and-GEMs.html - specific files downloaded were 
+[2017 Code Descriptions in Tabular Order [ZIP, 2MB]](https://www.cms.gov/Medicare/Coding/ICD10/Downloads/2017-ICD10-Code-Descriptions.zip) and [2017 ICD-10-PCS Codes File [ZIP, 831KB]] (https://www.cms.gov/Medicare/Coding/ICD10/Downloads/2017-New-Procedure-Codes.zip)
+
+ICD 10 Files included with this code are:
+
+* icd10cm_codes_2017.txt - List of ICD10 diagnosis codes from "2017 2017 Code Descriptions in Tabular Order"
+* icd10pcs_codes_2017.txt - List of ICD10 procedure codes from "2017 ICD-10-PCD Codes File"
+
+
+```{r checkfiles}
+library(tidyverse)
+library(iotools)
+library(data.table)
+library(stringi)
+
+files <- tibble(
+  file_desc = c("icd9_dx", "icd9_pc", "icd10_dx", "icd10_pc"),
+  file_name = c("data_files/CMS32_DESC_LONG_DX.txt",
+                "data_files/CMS32_DESC_LONG_SG.txt",
+                "data_files/icd10cm_codes_2017.txt",
+                "data_files/icd10pcs_codes_2017.txt")
+  )
+
+col_names <- c("code", "description")
+
+icd_data <- rbindlist(
+  apply(files, 1, function(f) {
+    if (file.exists(f["file_name"])) {
+      # using microbenchmark tested data.table::fread, iotools::input.file, iotools:: read.csv.raw
+      # found that iotools::input.file and data.table::fread were about the same (input.file just a tiny bit faster)
+      # but since fread has better syntax, using fread.
+      
+      icd_version <- stri_extract_first_regex(f["file_desc"], "[0-9]+")
+      code_type <- stri_extract_first_regex(f["file_desc"], "[a-z]+$")
+
+      fread(f["file_name"],
+            sep = "\t",
+            header = FALSE,
+            col.names = col_names,
+            colClasses = c("character")) %>% add_column(icd_version = icd_version, code_type = code_type, .before = 1)
+      }
+    else {
+      warning(paste(f["file_desc"], "file is missing - check current working directory is correct.\n"))
+      # have to return emtpy data frame so as to no mess up rbindlist
+      data.table(
+        icd_version = character(),
+        code_type =character(),
+        code = character(),
+        description = character()
+      )
+    }
+  }
+))
+
+head(icd_data)
+```
+## Search for ICD codes
+
+Now that the data is loaded into memory, do some validation or review of ICD codes. Here are a few examples:
+
+```{r icdcodes}
+
+search_all_cols = function(search_term) {
+  apply(icd_data, 1, function(r) {
+  any(stri_detect_regex(r, search_term))
+  }) %>% subset(icd_data, .)
+}
+
+# search for string of characters anywhere
+search_all_cols("010")
+
+# search for L followed by 1 or more digits
+search_all_cols("L\\d+")
+
+search_for_code = function(v = NULL, search_term, ct = NULL) {
+  dt <- icd_data
+  
+  if(!is.null(v))
+    dt <- dt[icd_version == v]
+  
+  if(!is.null(ct))
+    dt <- dt[code_type == ct]
+
+  apply(dt, 1, function(r) {
+    stri_detect_fixed(r["code"], search_term)
+  }) %>% subset(dt, .)
+}
+
+# example with all positional arguments
+search_for_code(9, "334", "pc")
+
+# just code to search for
+search_for_code(search_term = 334)
+
+# code and type (looking at both 9 & 10)
+search_for_code(search_term = 334, ct = "pc")
+
+```
+
+## Generate Random Data
+
+Create a file using randomly selected ICD diagnosis and procedure codes
+
+```{r genfile}
+library(tictoc)
+
+generate_sample <- function(v, n_rows, d_cols, p_cols, g_cols, pct_empty = 0.20) {
+
+  tic("creating base data.tables")
+  dx <- icd_data[icd_version == v & code_type == "dx"]
+  pc <- icd_data[icd_version == v & code_type == "pc"]
+  toc()
+  
+  tic("building indivual components")
+  # this method for sample generation: 
+  #   sample(dx$code, n_rows, replace=TRUE)
+  # is about 35 times faster than
+  #   dx[sample(1:nrow(dx), n_rows, replace=TRUE)]$code
+  d <- as.data.table(replicate(d_cols, sample(dx$code, n_rows, replace=TRUE)))
+  colnames(d) <- paste0('dx', 1:d_cols)
+  p <- as.data.table(replicate(p_cols, sample(pc$code, n_rows, replace=TRUE)))
+  colnames(p) <- paste0('pc', 1:p_cols)
+  g <- as.data.table(replicate(g_cols, sample(100000:999999, n_rows, replace=TRUE)))
+  colnames(g) <- paste0('g', 1:g_cols)
+  toc()
+  
+  tic("binding to one large data.table")
+  # not sure why, but this line (which is how I saw on SO to combine multiple data.tables):
+  #    as.data.table(do.call(cbind, c(d, p, g)))
+  # runs in about 80 - 90 seconds
+  # where as this line takes about 4 seconds for 1,000,000 rows
+  all_data <- as.data.table(cbind(cbind(d, p), g))
+  toc()
+  
+  tic("removing data at random")
+  # using data.table set() method takes about 17 seconds for 1,000,000 rows
+  for (j in 1:nrow(all_data)) {
+    s <- sample(1:length(all_data), length(all_data) * pct_empty, replace = FALSE)
+    set(all_data, i = j , s, NA) # integers using 'L' passed for efficiency
+  }
+  # # total time for sapply with 1,000,000 rows is about 75 seconds
+  # # also updating row wise is about 2x faster than column wise update
+  # if (pct_empty != 0) {
+  #   all_data <- as.data.table(sapply(all_data, function(r) {
+  #     r[(sample(1:length(r), length(r) * pct_empty, replace = FALSE))] <- NA
+  #     r
+  #   }))
+  # }
+  toc()
+  all_data
+}
+
+t <- generate_sample(
+  v = 9,
+  n_rows = 3407146, # KID file has 3407146 rows
+  d_cols = 29,
+  p_cols = 15,
+  g_cols = 115
+)
+
+head(t)
+
+library(feather)
+# file is about 2.7GB
+# takes about 6 seconds to write
+# for this example, feather is faster than fst
+tic("feather timing")
+write_feather(t, "sample_icd9_data.feather")
+toc()
+
+```
+
+Example of running a benchmark to evaulate fastest option of function.
+
+```{r benchmark}
+library(microbenchmark)
+
+mbm <- microbenchmark(
+  floor(runif(100000000, min=0, max=100001)),
+  sample(1:100000, 100000000, replace=TRUE),
+  times=10
+)
+mbm
+
+
+library(stringr)
+library(stringi)
+mbm <- microbenchmark(
+  str_extract(files$file_desc, "[a-z]+$"),
+  stri_extract_first_regex(files$file_desc, "[a-z]+$"),
+  times=10000
+)
+mbm
+
+```
