@@ -147,6 +147,9 @@ generate_sample <- function(v, n_rows, d_cols, p_cols, g_cols, pct_empty = 0.20)
   colnames(d) <- paste0('dx', 1:d_cols)
   p <- as.data.table(replicate(p_cols, sample(pc$code, n_rows, replace=TRUE)))
   colnames(p) <- paste0('pc', 1:p_cols)
+  
+  # hard coded range of 'fake' values to generate - probably should have this as a
+  # separate function or input parameter
   g <- as.data.table(replicate(g_cols, sample(100000:999999, n_rows, replace=TRUE)))
   colnames(g) <- paste0('g', 1:g_cols)
   toc()
@@ -154,9 +157,14 @@ generate_sample <- function(v, n_rows, d_cols, p_cols, g_cols, pct_empty = 0.20)
   tic("binding to one large data.table")
   # not sure why, but this line (which is how I saw on SO to combine multiple data.tables):
   #    as.data.table(do.call(cbind, c(d, p, g)))
-  # runs in about 80 - 90 seconds
+  # runs in about 80 - 90 seconds for 1,000,000 rows
   # where as this line takes about 4 seconds for 1,000,000 rows
-  all_data <- as.data.table(cbind(cbind(d, p), g))
+  #    as.data.table(cbind(cbind(d, p), g))
+  # and this new method I discovered is even faster - about 0.6 second for 1,000,000 rows
+  all_data <- copy(d)
+  all_data[, colnames(p) := p]
+  all_data[, colnames(g) := g]
+
   toc()
   
   tic("removing data at random")
@@ -174,26 +182,40 @@ generate_sample <- function(v, n_rows, d_cols, p_cols, g_cols, pct_empty = 0.20)
   #   }))
   # }
   toc()
+  
+  tic("adding id column")
+  # add an ID column - simple incremental number
+  all_data[, id := seq_along(dx1), ]
+  setcolorder(all_data, c("id", names(all_data)[1:(length(all_data)-1)]))
+  toc()
+  
   all_data
 }
 
 t <- generate_sample(
   v = 9,
   n_rows = 3407146, # KID file has 3407146 rows
-  d_cols = 29,
-  p_cols = 15,
-  g_cols = 115
+  d_cols = 29,      # KID file has 29 columns of ICD diagnoses
+  p_cols = 15,      # KID file has 15 columns of ICD procedures
+  g_cols = 114      # KID file has 114 other columns
 )
 
 head(t)
 
 library(feather)
-# file is about 2.7GB
+# file is about 2.7GB for 3407146 rows of data
 # takes about 6 seconds to write
-# for this example, feather is faster than fst
+# for this example, feather is slightly faster than fst for writing
 tic("feather timing")
 write_feather(t, "sample_icd9_data.feather")
 toc()
+
+# File is about 1.4GB for 3407146 rows of data
+# takes about 210 seconds to write
+#pccc_icd10_dataset <- t
+#tic("rdata timing")
+#save(pccc_icd10_dataset, file="pccc_icd10_dataset.rda")
+#toc()
 
 ```
 
