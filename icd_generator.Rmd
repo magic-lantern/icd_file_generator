@@ -94,12 +94,12 @@ search_all_cols = function(search_term) {
 }
 
 # search for string of characters anywhere
-search_all_cols("010")
+search_all_cols("516")
 
 # search for L followed by 1 or more digits
 search_all_cols("L\\d+")
 
-search_for_code = function(v = NULL, search_term, ct = NULL) {
+search_for_code_pattern = function(v = NULL, search_term, ct = NULL) {
   dt <- icd_data
   
   if(!is.null(v))
@@ -109,18 +109,34 @@ search_for_code = function(v = NULL, search_term, ct = NULL) {
     dt <- dt[code_type == ct]
 
   apply(dt, 1, function(r) {
-    stri_detect_fixed(r["code"], search_term)
+    stri_detect_regex(r["code"], search_term)
   }) %>% subset(dt, .)
 }
 
+search_for_code_exact = function(v = NULL, search_term, ct = NULL) {
+  dt <- icd_data
+  
+  if(!is.null(v))
+    dt <- dt[icd_version == v]
+  
+  if(!is.null(ct))
+    dt <- dt[code_type == ct]
+
+  dt[code == search_term]
+}
+
 # example with all positional arguments
-search_for_code(9, "334", "pc")
+search_for_code_pattern(10, "^G318.*", "dx")
 
 # just code to search for
-search_for_code(search_term = 334)
+search_for_code_pattern(search_term = 334)
 
 # code and type (looking at both 9 & 10)
-search_for_code(search_term = 334, ct = "pc")
+search_for_code_pattern(search_term = 334, ct = "pc")
+
+# find exact matches
+search_for_code_exact(search_term = "0010")
+
 
 ```
 
@@ -242,3 +258,4 @@ mbm <- microbenchmark(
 mbm
 
 ```
+
