@@ -14,9 +14,7 @@ Encoding: UTF-8
 URL: https://github.com/magic-lantern/icd_file_generator
 LazyData: true
 Imports:
-  Matrix,
-  dplyr,
-  tibble,
+  data.table,
   tictoc
 Suggests:
     knitr,

@@ -40,67 +40,42 @@ generate_sample <- function(version = 10, nrows = 1, dcols = 1, pcols = 1, gcols
   tictoc::tic("Total Time to Generate Data Set")
   e <- new.env()
   utils::data(list = c("icd9dx", "icd9pc", "icd10dx", "icd10pc"), package = "icdgenerator", envir = e)
-  dxri <- seq(1, nrow(e[[paste0("icd", version, "dx")]]))
-  pcri <- seq(1, nrow(e[[paste0("icd", version, "pc")]]))
-
-  dx <- pc <- dn <- pn <- gn <- character()
-  g <- numeric()
-  d_i <- d_j <- p_i <- p_j <- g_i <- g_j <- integer()
 
   tictoc::tic("Generating Diagnostic Codes")
-  if (dcols > 0L) {
-    dx <- sample(dxri, size = nrows * dcols * (1 - pct_empty), replace = TRUE)
-    dx <- e[[paste0("icd", version, "dx")]]$code[dx]
-    d_i <- sample(seq(1, nrows, by = 1), length(dx), replace = TRUE)
-    d_j <- sample(seq(1, dcols, by = 1), length(dx), replace = TRUE)
-    dn  <- paste("d", 1:dcols, sep = "_")
-  }
+  d <- data.table::as.data.table(replicate(dcols, sample(e[[paste0("icd", version, "dx")]]$code, nrows, replace=TRUE)))
+  colnames(d) <- paste('dx', 1:dcols, sep = "_")
   tictoc::toc(quiet = quiet)
 
   tictoc::tic("Generating Procedure Codes")
-  if (pcols > 0L) {
-    pc <- sample(pcri, size = nrows * pcols * (1 - pct_empty), replace = TRUE)
-    pc <- e[[paste0("icd", version, "pc")]]$code[pc]
-    p_i <- sample(seq(1, nrows, by = 1), length(pc), replace = TRUE)
-    p_j <- sample(seq(1, pcols, by = 1), length(pc), replace = TRUE)
-    pn  <- paste("p", 1:pcols, sep = "_")
-  }
+  p <- data.table::as.data.table(replicate(pcols, sample(e[[paste0("icd", version, "pc")]]$code, nrows, replace=TRUE)))
+  colnames(p) <- paste('pc', 1:pcols, sep = "_")
   tictoc::toc(quiet = quiet)
-
+  
   tictoc::tic("Generating gcols of random data")
-  if (gcols > 0L) {
-    g  <- sample(c(letters, LETTERS), size = nrows * gcols * (1 - pct_empty), replace = TRUE)
-    g_i <- sample(seq(1, nrows, by = 1), length(g), replace = TRUE)
-    g_j <- sample(seq(1, gcols, by = 1), length(g), replace = TRUE)
-    gn  <- paste("g", 1:gcols, sep = "_")
+  g <- data.table::as.data.table(replicate(gcols, sample(100000:999999, nrows, replace=TRUE)))
+  colnames(g) <- paste('g', 1:gcols, sep = "_")
+  tictoc::toc(quiet = quiet)
+
+  tictoc::tic("Binding one large data.table")
+  all_data <- data.table::copy(d)
+  data.table::set(all_data, j = colnames(p), value = p)
+  data.table::set(all_data, j = colnames(g), value = g)
+  tictoc::toc(quiet = quiet)
+
+  tictoc::tic("removing data at random")
+  for (j in 1:nrow(all_data)) {
+    s <- sample(1:length(all_data), length(all_data) * pct_empty, replace = FALSE)
+    data.table::set(all_data, i = j , s, NA) # integers using 'L' passed for efficiency
   }
   tictoc::toc(quiet = quiet)
-
-  tictoc::tic("Building the data set as a sparse matrix")
-  out <- matrix(character(), nrow = nrows, ncol = dcols + pcols + gcols)
-  rws <- c(d_i, p_i, g_i)
-  cls <- c(d_j, dcols + p_j, dcols + pcols + g_j)
-  dat <- c(dx, pc, g)
-  for(i in seq(1, length(dx) + length(pc) + length(g))) {
-    out[rws[i], cls[i]] <- dat[i]
-  }
+  
+  tictoc::tic("adding id column")
+  # all_data[, id := 1:nrows, ]
+  data.table::set(all_data, j = "id", value = 1:nrows)
+  data.table::setcolorder(all_data, c("id", names(all_data)[1:(length(all_data)-1)]))
   tictoc::toc(quiet = quiet)
-
-  tictoc::tic("coercing to standard matrix")
-  out <- as.matrix(out)
-  tictoc::toc(quiet = quiet)
-
-  tictoc::tic("coercing to a data_frame")
-  out <- dplyr::as_data_frame(out)
-  tictoc::toc(quiet = quiet)
-
-  tictoc::tic("adding id column and naming generated data columns")
-  names(out) <- c(dn, pn, gn) 
-  out <- tibble::add_column(out, id = seq(1, nrows, by = 1), .before = 1L)
-  tictoc::toc(quiet = quiet)
-
-  tictoc::toc(quiet = quiet)
-
-  out
+  
+  tictoc::toc() # total time
+  all_data 
 }
 
