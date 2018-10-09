@@ -5,7 +5,7 @@
 \title{Generate Random ICD Data}
 \usage{
 generate_sample(version = 10, nrows = 1, dcols = 1, pcols = 1,
-  gcols = 0, pct_empty = 0.2)
+  gcols = 0, pct_empty = 0.2, quiet = TRUE)
 }
 \arguments{
 \item{version}{ICD version 9 or 10.  Defaults to 10.}
@@ -20,6 +20,9 @@ generate_sample(version = 10, nrows = 1, dcols = 1, pcols = 1,
 
 \item{pct_empty}{the percentage of diagnostic and procedure codes to be
 "missing" in the resulting data frame.}
+
+\item{quiet}{If \code{FALSE}, then report incremental timing.
+To suppress incremental timing set \code{quiet = TRUE}.}
 }
 \description{
 Create a data frame using randomly selected ICD diagnosis and procedure codes
@@ -28,7 +31,7 @@ Create a data frame using randomly selected ICD diagnosis and procedure codes
 
 eg <- generate_sample(
   version = 9,
-  nrows = 340, 
+  nrows = 340,
   dcols = 29,
   pcols = 15,
   gcols = 114
