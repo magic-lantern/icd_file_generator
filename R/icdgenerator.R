@@ -67,7 +67,7 @@ generate_sample <- function(version = 10, nrows = 1, dcols = 1, pcols = 1, gcols
   #   s <- sample(1:length(all_data), length(all_data) * pct_empty, replace = FALSE)
   #   data.table::set(all_data, i = j , s, NA) # integers using 'L' passed for efficiency
   # }
-  mkmissing <- lapply(rbinom(nrow(all_data), ncol(all_data), pct_empty),
+  mkmissing <- lapply(stats::rbinom(nrow(all_data), ncol(all_data), pct_empty),
                       function(size) {
                         sample(colnames(all_data), size)
                       })
