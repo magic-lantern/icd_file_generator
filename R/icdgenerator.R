@@ -63,9 +63,18 @@ generate_sample <- function(version = 10, nrows = 1, dcols = 1, pcols = 1, gcols
   tictoc::toc(quiet = quiet)
 
   tictoc::tic("removing data at random")
-  for (j in 1:nrow(all_data)) {
-    s <- sample(1:length(all_data), length(all_data) * pct_empty, replace = FALSE)
-    data.table::set(all_data, i = j , s, NA) # integers using 'L' passed for efficiency
+  # for (j in 1:nrow(all_data)) {
+  #   s <- sample(1:length(all_data), length(all_data) * pct_empty, replace = FALSE)
+  #   data.table::set(all_data, i = j , s, NA) # integers using 'L' passed for efficiency
+  # }
+  mkmissing <- lapply(rbinom(nrow(all_data), ncol(all_data), pct_empty),
+                      function(size) {
+                        sample(colnames(all_data), size)
+                      })
+  for (i in 1:length(mkmissing)) {
+    if (length(mkmissing[[i]])) {
+      data.table::set(all_data, i = i, j = mkmissing[[i]], value = NA)
+    }
   }
   tictoc::toc(quiet = quiet)
   
