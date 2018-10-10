@@ -228,8 +228,12 @@ file = "../R/icd-dataset.R")
 
 # Save the Data Sets
 ```{r}
-devtools::use_data(icd9dx, overwrite = TRUE)
-devtools::use_data(icd9pc, overwrite = TRUE)
+icd9dx  <- data.table::as.data.table(icd9dx)
+icd9pc  <- data.table::as.data.table(icd9pc) 
+icd10dx <- data.table::as.data.table(icd10dx)
+icd10pc <- data.table::as.data.table(icd10pc)
+devtools::use_data(icd9dx,  overwrite = TRUE)
+devtools::use_data(icd9pc,  overwrite = TRUE)
 devtools::use_data(icd10dx, overwrite = TRUE)
 devtools::use_data(icd10pc, overwrite = TRUE)
 ```

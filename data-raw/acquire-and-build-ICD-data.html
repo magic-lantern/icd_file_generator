@@ -608,10 +608,14 @@ file = &quot;../R/icd-dataset.R&quot;)</code></pre>
 </div>
 <div id="save-the-data-sets" class="section level1">
 <h1>Save the Data Sets</h1>
-<pre class="r"><code>devtools::use_data(icd9dx, overwrite = TRUE)</code></pre>
+<pre class="r"><code>icd9dx  &lt;- data.table::as.data.table(icd9dx)
+icd9pc  &lt;- data.table::as.data.table(icd9pc) 
+icd10dx &lt;- data.table::as.data.table(icd10dx)
+icd10pc &lt;- data.table::as.data.table(icd10pc)
+devtools::use_data(icd9dx,  overwrite = TRUE)</code></pre>
 <pre><code>## ✔ Setting active project to '/home/dewittp/Bennett-Tell/icd_file_generator'
 ## ✔ Saving 'icd9dx' to 'data/icd9dx.rda'</code></pre>
-<pre class="r"><code>devtools::use_data(icd9pc, overwrite = TRUE)</code></pre>
+<pre class="r"><code>devtools::use_data(icd9pc,  overwrite = TRUE)</code></pre>
 <pre><code>## ✔ Saving 'icd9pc' to 'data/icd9pc.rda'</code></pre>
 <pre class="r"><code>devtools::use_data(icd10dx, overwrite = TRUE)</code></pre>
 <pre><code>## ✔ Saving 'icd10dx' to 'data/icd10dx.rda'</code></pre>
@@ -648,12 +652,12 @@ file = &quot;../R/icd-dataset.R&quot;)</code></pre>
 ## [22] dplyr_0.7.6          stringr_1.3.1        knitr_1.20          
 ## [25] fs_1.2.6             desc_1.2.0           devtools_1.13.6.9000
 ## [28] rprojroot_1.3-2      tidyselect_0.2.4     glue_1.3.0          
-## [31] R6_2.3.0             processx_3.2.0       fansi_0.4.0         
-## [34] rmarkdown_1.10       sessioninfo_1.1.0    purrr_0.2.5         
-## [37] callr_3.0.0          magrittr_1.5         clisymbols_1.2.0    
-## [40] usethis_1.4.0        backports_1.1.2      ps_1.1.0            
-## [43] htmltools_0.3.6      assertthat_0.2.0     utf8_1.1.4          
-## [46] stringi_1.2.4        crayon_1.3.4</code></pre>
+## [31] data.table_1.11.8    R6_2.3.0             processx_3.2.0      
+## [34] fansi_0.4.0          rmarkdown_1.10       sessioninfo_1.1.0   
+## [37] purrr_0.2.5          callr_3.0.0          magrittr_1.5        
+## [40] clisymbols_1.2.0     usethis_1.4.0        backports_1.1.2     
+## [43] ps_1.1.0             htmltools_0.3.6      assertthat_0.2.0    
+## [46] utf8_1.1.4           stringi_1.2.4        crayon_1.3.4</code></pre>
 </div>
 
 
