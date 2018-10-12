@@ -1,0 +1,4 @@
+^.*\.Rout$
+^.*\.Rproj$
+^\.Rproj\.user$
+^.*makefile$

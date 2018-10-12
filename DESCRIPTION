@@ -1,0 +1,23 @@
+Package: icdgenerator
+Title: ICD Code Generator
+Version: 0.0.1.9000
+Authors@R: c(
+    person("Seth",  "Russel", email = "seth.russel@ucdenver.edu", role = c("aut")),
+    person("Peter", "DeWitt", email = "peter.dewitt@ucdenver.edu", role = c("aut", "cre"))
+    )
+Description: Reference and generate random data sets consisting of ICD 9 or ICD
+    10 diagnotics and procedure codes.
+Depends:
+    R (>= 3.0.2)
+License: file LICENSE
+Encoding: UTF-8
+URL: https://github.com/magic-lantern/icd_file_generator
+LazyData: true
+Imports:
+  data.table,
+  tictoc
+Suggests:
+    knitr,
+    rmarkdown
+RoxygenNote: 6.1.0
+VignetteBuilder: knitr
